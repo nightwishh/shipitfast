@@ -1,16 +1,30 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const User = require("./user");
-require("dotenv").config();
+const User = require("./database");
+const passport = require('passport')
+const session = require('express-session')
+const {hashSync} = require('bcrypt');
+const MongoStore = require('connect-mongo');
+const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 3000;
-
-mongoose
-  .connect(process.env.DATABASE_URL)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("Could not connect to MongoDB", err));
-
+app.use(cors({
+  origin: 'http://localhost:4200',
+  credentials: true
+}));
+app.use(session({
+  secret: "secret",
+  resave: false ,
+  saveUninitialized: true ,
+  store: MongoStore.create({mongoUrl: process.env.DATABASE_URL,colletionName:"sessions"}),
+  cookie:{
+    secure: true,
+    sameSite: 'none'
+  }
+}));
+app.use(passport.initialize()) 
+app.use(passport.session());
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -20,22 +34,15 @@ app.post("/register", async (req, res) => {
   const user = new User({
     fullName: req.body.fullName,
     email: req.body.email,
-    password: req.body.password,
+    password: hashSync(req.body.password,10),
   });
-  await user.save();
+  // await user.save();
   res.json(user);
 });
-app.post("/login", async (req, res) => {
-  const userValid = await User.findOne({
-    email: req.body.email,
-    password: req.body.password,
-  });
-  if (userValid) {
-    res.json("Access granted");
-  } else {
-    res.json({ message: "Incorrect email or password" });
-  }
-});
+app.post("/login", passport.authenticate('local', {
+  successRedirect: '/',
+  failureRedirect: '/login'
+}));
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
