@@ -3,6 +3,14 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Launch Program",
+      "program": "../backend/app.js",
+      "request": "launch",
+      "preLaunchTask": "node app.js",
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node"
+    },
+    {
       "name": "ng serve",
       "type": "chrome",
       "request": "launch",
