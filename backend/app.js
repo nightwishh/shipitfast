@@ -7,9 +7,9 @@ const { hashSync } = require("bcrypt");
 const MongoStore = require("connect-mongo");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-
+const Authenticate = require("./user");
 require("./passport")(passport);
-
+const tokens = require("./tokenManager");
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(
@@ -18,6 +18,7 @@ app.use(
     credentials: true,
   })
 );
+
 app.use(
   session({
     secret: "secret",
@@ -25,7 +26,7 @@ app.use(
     saveUninitialized: true,
     store: MongoStore.create({
       mongoUrl: process.env.DATABASE_URL,
-      colletionName: "sessions",
+      colletionName: "tokens",
     }),
   })
 );
@@ -33,7 +34,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", passport.authenticate('bearer', { session: false }), (req, res) => {
   console.log("Session:", req.session);
   console.log("User:", req.user);
   console.log("Is Authenticated:", req.isAuthenticated());
@@ -49,25 +50,16 @@ app.post("/register", async (req, res) => {
   await user.save();
   res.json(user);
 });
-app.get("/login", (req, res, next) => {
-  passport.authenticate("local", (err, user, info) => {
-    if (err) {
-      return res.status(500).json({ message: "Internal Server Error" });
-    }
-    if (!user) {
-      return res.status(401).json({ message: "Authentication failed" });
-    }
-    req.logIn(user, (err) => {
-      if (err) {
-        return res.status(500).json({ message: "Internal Server Error" });
-      }
-      console.log("User authenticated:", req.isAuthenticated());
-
-      return res
-        .status(200)
-        .json({ message: "Authentication successful", user: user });
-    });
-  })(req, res, next);
+app.post("/login", async (req, res, next) => {
+  const auth = await Authenticate(req.body.email,req.body.password);
+  if (auth.status == 0) {
+    const tokenUser = new tokens({email:req.body.email, token:"&*some&&token12389e"});
+    await tokenUser.save();
+  } 
+  res.json(auth.message);
+});
+app.post("/tokens",async (req,res,next) => {
+  console.log(await tokens.findOne({token:req.body.token}));
 });
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
