@@ -1,19 +1,24 @@
 import { Component } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../services/auth.service';
+import { Credentials, LoginCredentials } from '../models/credentials.model';
 @Component({
   selector: 'login',
   standalone: true,
   imports: [ReactiveFormsModule, FormsModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
+  providers: [AuthService],
 })
 export class LoginComponent {
-  email: string = '';
-  password: string = '';
-
+  userDetails: LoginCredentials = new LoginCredentials();
+  constructor(private authService: AuthService) {}
   onSignIn() {
-    // Handle login logic here
-    console.log('Login attempt', this.email, this.password);
+    // this.authService.register(this.userDetails).subscribe((res: any) => {
+    //   if (res.status == 0) {
+    //     this.router.navigate(['/login']);
+    //   }
+    // });
   }
 }

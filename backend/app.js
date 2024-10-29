@@ -48,7 +48,7 @@ app.post("/register", async (req, res) => {
     password: hashSync(req.body.password, 10),
   });
   await user.save();
-  res.json(user);
+  res.json({status:0, message:"User registered succesfully"});
 });
 app.post("/login", async (req, res, next) => {
   const auth = await Authenticate(req.body.email,req.body.password);
